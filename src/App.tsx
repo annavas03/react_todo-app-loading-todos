@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { UserWarning } from './UserWarning';
 import { getTodos, USER_ID } from './api/todos';
 import { TodoList } from './component/TodoList/TodoList';
@@ -9,37 +9,45 @@ import { Footer } from './component/Footer/Footer';
 import { ErrorNotification } from './component/ErrorNotification/ErrorNotification';
 import { Todo, TodoStatus } from './types/Todo';
 import { getFilteredTodos } from './utils/getFilteredTodos';
+import { ERROR_MESSAGES } from './constants/constants';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [status, setStatus] = useState<TodoStatus>('all');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  //інші ерори
-  /*
-      Title should not be empty
 
-      Unable to add a todo
-
-      Unable to delete a todo
-
-      Unable to update a todo */
-
+  //завантаження тудушок
   useEffect(() => {
     setLoading(true);
 
     getTodos()
       .then(setTodos)
       .catch(() => {
-        setError('Unable to load todos');
-        setTimeout(() => {
-          setError('');
-        }, 3000);
+        setError(ERROR_MESSAGES.load);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredTodos = getFilteredTodos({ todos, status });
+  //автоматичне приховування помилок
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setError('');
+    }, 3000);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [error]);
+
+  const filteredTodos = useMemo(
+    () => getFilteredTodos({ todos, status }),
+    [todos, status],
+  );
 
   if (!USER_ID) {
     return <UserWarning />;
@@ -68,18 +76,17 @@ export const App: React.FC = () => {
             />
           </form>
         </header>
-        {loading ? (
+        {loading && (
           <div data-cy="TodoLoader" className="modal overlay">
             <div className="modal-background has-background-white-ter" />
             <div className="loader" />
           </div>
-        ) : (
-          todos.length > 0 && (
-            <>
-              <TodoList todos={filteredTodos} />
-              <Footer todos={todos} status={status} setStatus={setStatus} />
-            </>
-          )
+        )}
+        {todos.length > 0 && (
+          <>
+            <TodoList todos={filteredTodos} />
+            <Footer todos={todos} status={status} setStatus={setStatus} />
+          </>
         )}
       </div>
 

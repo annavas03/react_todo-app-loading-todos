@@ -8,10 +8,6 @@ type TodoListProps = {
 };
 
 export const TodoList = ({ todos }: TodoListProps) => {
-  if (!todos) {
-    return;
-  }
-
   return (
     <section className="todoapp__main" data-cy="TodoList">
       {/* This is a completed todo */}
